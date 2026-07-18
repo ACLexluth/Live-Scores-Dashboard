@@ -1166,15 +1166,34 @@
                 timestamp: Date.now()
             };
 
-            votesRef.child(key).child(currentUser.uid).set(voteData);
             userVotes[key] = team;
-            renderMatches();
+
+            votesRef.child(key).child(currentUser.uid).set(voteData);
+
+            // Optimistic UI update
+            const container = document.querySelector(`.vote-container[data-votekey="${key}"]`);
+            if (container) {
+                container.querySelectorAll('.vote-btn').forEach(btn => {
+                    btn.disabled = true;
+                    btn.classList.remove('voted');
+                });
+                const btns = container.querySelectorAll('.vote-btn');
+                if (team === 'home' && btns[0]) { btns[0].classList.add('voted'); btns[0].innerHTML = '&#10003; Voted'; }
+                if (team === 'away' && btns[1]) { btns[1].classList.add('voted'); btns[1].innerHTML = '&#10003; Voted'; }
+            }
         }
+
+        const activeListeners = {};
 
         function loadVotes(matchKey, callback) {
             if (!firebaseReady || !votesRef) { callback({ home: 0, away: 0, adminPick: null }); return; }
 
-            votesRef.child(matchKey).on('value', snap => {
+            // Detach old listener if exists
+            if (activeListeners[matchKey]) {
+                votesRef.child(matchKey).off('value', activeListeners[matchKey]);
+            }
+
+            const listener = snap => {
                 const votes = snap.val() || {};
                 let home = 0, away = 0, adminPick = null;
                 Object.values(votes).forEach(v => {
@@ -1182,8 +1201,42 @@
                     else away++;
                     if (v.isAdmin) adminPick = v.team;
                 });
+
+                // Update DOM directly without re-render
+                const el = document.querySelector(`.vote-container[data-votekey="${matchKey}"]`);
+                if (el) {
+                    const total = home + away;
+                    const homePct = total ? Math.round((home / total) * 100) : 0;
+                    const awayPct = total ? 100 - homePct : 0;
+
+                    const homeCountEl = el.querySelector('[data-home-count]');
+                    const awayCountEl = el.querySelector('[data-away-count]');
+                    const homePctEl = el.querySelector('[data-home-pct]');
+                    const awayPctEl = el.querySelector('[data-away-pct]');
+                    const homeBar = el.querySelector('[data-home-bar]');
+                    const awayBar = el.querySelector('[data-away-bar]');
+                    const totalEl = el.querySelector('[data-vote-total]');
+                    const adminEl = el.querySelector('[data-admin-pick]');
+
+                    if (homeCountEl) homeCountEl.textContent = home;
+                    if (awayCountEl) awayCountEl.textContent = away;
+                    if (homePctEl) homePctEl.textContent = total ? `${homePct}%` : '0%';
+                    if (awayPctEl) awayPctEl.textContent = total ? `${awayPct}%` : '0%';
+                    if (homeBar) homeBar.style.height = total ? `${Math.max(homePct, 5)}%` : '2px';
+                    if (awayBar) awayBar.style.height = total ? `${Math.max(awayPct, 5)}%` : '2px';
+                    if (totalEl) totalEl.textContent = `${total} total vote${total !== 1 ? 's' : ''}`;
+
+                    if (adminEl && adminPick) {
+                        adminEl.style.display = 'flex';
+                        adminEl.innerHTML = `&#128081; Admin picks ${adminPick === 'home' ? 'Home' : 'Away'}`;
+                    }
+                }
+
                 callback({ home, away, adminPick });
-            });
+            };
+
+            activeListeners[matchKey] = listener;
+            votesRef.child(matchKey).on('value', listener);
         }
 
         function loadUserVotes() {
@@ -1354,36 +1407,9 @@
 
             if (!totalVisible) container.innerHTML = '<div class="no-matches">No matches found</div>';
 
-            // Load votes for visible live/upcoming matches
+            // Attach realtime vote listeners
             document.querySelectorAll('.vote-container[data-votekey]').forEach(el => {
-                const key = el.dataset.votekey;
-                loadVotes(key, counts => {
-                    const total = counts.home + counts.away;
-                    const homePct = total ? Math.round((counts.home / total) * 100) : 0;
-                    const awayPct = total ? 100 - homePct : 0;
-
-                    const homeCount = el.querySelector('[data-home-count]');
-                    const awayCount = el.querySelector('[data-away-count]');
-                    const homePctEl = el.querySelector('[data-home-pct]');
-                    const awayPctEl = el.querySelector('[data-away-pct]');
-                    const homeBar = el.querySelector('[data-home-bar]');
-                    const awayBar = el.querySelector('[data-away-bar]');
-                    const totalEl = el.querySelector('[data-vote-total]');
-                    const adminEl = el.querySelector('[data-admin-pick]');
-
-                    if (homeCount) homeCount.textContent = counts.home;
-                    if (awayCount) awayCount.textContent = counts.away;
-                    if (homePctEl) homePctEl.textContent = total ? `${homePct}%` : '0%';
-                    if (awayPctEl) awayPctEl.textContent = total ? `${awayPct}%` : '0%';
-                    if (homeBar) homeBar.style.height = total ? `${Math.max(homePct, 3)}%` : '2px';
-                    if (awayBar) awayBar.style.height = total ? `${Math.max(awayPct, 3)}%` : '2px';
-                    if (totalEl) totalEl.textContent = `${total} total vote${total !== 1 ? 's' : ''}`;
-
-                    if (adminEl && counts.adminPick) {
-                        adminEl.style.display = 'flex';
-                        adminEl.innerHTML = `&#128081; Admin picks ${counts.adminPick === 'home' ? 'Home' : 'Away'}`;
-                    }
-                });
+                loadVotes(el.dataset.votekey, () => {});
             });
         }
 
