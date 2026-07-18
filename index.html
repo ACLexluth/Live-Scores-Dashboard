@@ -279,7 +279,7 @@
             display: flex;
             gap: 6px;
             align-items: center;
-            min-width: 200px;
+            min-width: 180px;
             justify-content: flex-end;
         }
 
@@ -346,6 +346,18 @@
             font-size: 11px;
             color: #444;
             font-style: italic;
+        }
+
+        .dk-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 9px;
+            color: #888;
+            background: #1a1a2e;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid #2a2a4a;
         }
 
         .tennis-scores {
@@ -566,113 +578,6 @@
             color: #f7c948;
         }
 
-        /* API Key setup banner */
-        .api-key-banner {
-            background: linear-gradient(135deg, #1e1e38, #252548);
-            border: 1px solid #3a3a5a;
-            border-radius: 8px;
-            padding: 16px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .api-key-banner.hidden {
-            display: none;
-        }
-
-        .api-key-banner .banner-icon {
-            font-size: 20px;
-        }
-
-        .api-key-banner .banner-text {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .api-key-banner .banner-text h3 {
-            font-size: 13px;
-            color: #f7c948;
-            margin-bottom: 4px;
-        }
-
-        .api-key-banner .banner-text p {
-            font-size: 11px;
-            color: #888;
-            line-height: 1.4;
-        }
-
-        .api-key-banner .banner-text a {
-            color: #60a5fa;
-            text-decoration: none;
-        }
-
-        .api-key-banner .banner-text a:hover {
-            text-decoration: underline;
-        }
-
-        .api-key-input {
-            background: #1a1a2e;
-            border: 1px solid #3a3a5a;
-            border-radius: 4px;
-            padding: 8px 12px;
-            font-size: 12px;
-            color: #e0e0e0;
-            width: 260px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .api-key-input:focus {
-            border-color: #f7c948;
-        }
-
-        .api-key-save {
-            background: #f7c948;
-            color: #1a1a2e;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .api-key-save:hover {
-            opacity: 0.9;
-        }
-
-        .api-key-status {
-            font-size: 11px;
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
-
-        .api-key-status.connected {
-            color: #4ade80;
-            background: rgba(74, 222, 128, 0.1);
-        }
-
-        .api-key-status.error {
-            color: #f87171;
-            background: rgba(248, 113, 113, 0.1);
-        }
-
-        .bovada-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 9px;
-            color: #888;
-            background: #1a1a2e;
-            padding: 2px 6px;
-            border-radius: 3px;
-            border: 1px solid #2a2a4a;
-        }
-
         @media (max-width: 768px) {
             .match-row {
                 grid-template-columns: 65px 1fr auto;
@@ -681,10 +586,6 @@
 
             .match-odds {
                 display: none;
-            }
-
-            .match-row.show-odds-mobile {
-                grid-template-columns: 1fr;
             }
         }
 
@@ -700,15 +601,6 @@
 
             .header {
                 padding: 10px 16px;
-            }
-
-            .api-key-banner {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .api-key-input {
-                width: 100%;
             }
         }
 
@@ -776,24 +668,12 @@
     </div>
 
     <div class="main-content">
-        <!-- API Key Setup -->
-        <div class="api-key-banner" id="apiKeyBanner">
-            <span class="banner-icon">&#128273;</span>
-            <div class="banner-text">
-                <h3>Enable Bovada Betting Odds</h3>
-                <p>Get a free API key from <a href="https://the-odds-api.com" target="_blank">the-odds-api.com</a> (500 free requests/month). Odds are sourced from Bovada, DraftKings, FanDuel, and more.</p>
-            </div>
-            <input type="text" class="api-key-input" id="oddsApiKey" placeholder="Paste your API key here...">
-            <button class="api-key-save" onclick="saveApiKey()">Enable Odds</button>
-            <span class="api-key-status" id="apiKeyStatus"></span>
-        </div>
-
         <div class="filter-bar">
             <button class="filter-btn active" data-filter="all">All</button>
             <button class="filter-btn" data-filter="live">Live</button>
             <button class="filter-btn" data-filter="finished">Finished</button>
             <button class="filter-btn" data-filter="upcoming">Upcoming</button>
-            <div class="odds-toggle" id="oddsToggle" style="display:none">
+            <div class="odds-toggle">
                 <label>Show Odds</label>
                 <div class="toggle-switch active" id="oddsSwitch" onclick="toggleOdds()"></div>
             </div>
@@ -817,60 +697,10 @@
             'tennis-wta': 'https://site.api.espn.com/apis/site/v2/sports/tennis/wta/scoreboard'
         };
 
-        // The Odds API sport keys
-        const ODDS_SPORT_KEYS = {
-            wnba: 'basketball_wnba',
-            mlb: 'baseball_mlb',
-            'nba-sl': 'basketball_nba'  // Fall back to NBA if no summer league odds
-        };
-
         let matchData = {};
-        let oddsData = {};
         let activeSport = "all";
         let activeFilter = "all";
         let showOdds = true;
-        let oddsApiKey = localStorage.getItem('odds_api_key') || '';
-
-        // --- INIT ---
-        if (oddsApiKey) {
-            document.getElementById('apiKeyBanner').classList.add('hidden');
-            document.getElementById('oddsToggle').style.display = 'flex';
-            document.getElementById('oddsApiKey').value = oddsApiKey;
-        }
-
-        // --- API KEY MANAGEMENT ---
-
-        function saveApiKey() {
-            const key = document.getElementById('oddsApiKey').value.trim();
-            if (!key) return;
-
-            oddsApiKey = key;
-            localStorage.setItem('odds_api_key', key);
-
-            const status = document.getElementById('apiKeyStatus');
-            status.textContent = 'Verifying...';
-            status.className = 'api-key-status';
-
-            // Test the key with a simple request
-            fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${key}`)
-                .then(r => {
-                    if (!r.ok) throw new Error('Invalid key');
-                    return r.json();
-                })
-                .then(() => {
-                    status.textContent = 'Connected!';
-                    status.className = 'api-key-status connected';
-                    document.getElementById('apiKeyBanner').classList.add('hidden');
-                    document.getElementById('oddsToggle').style.display = 'flex';
-                    fetchOdds();
-                })
-                .catch(() => {
-                    status.textContent = 'Invalid key';
-                    status.className = 'api-key-status error';
-                    oddsApiKey = '';
-                    localStorage.removeItem('odds_api_key');
-                });
-        }
 
         function toggleOdds() {
             showOdds = !showOdds;
@@ -878,161 +708,7 @@
             renderMatches();
         }
 
-        // --- ODDS FETCHING ---
-
-        async function fetchOdds() {
-            if (!oddsApiKey) return;
-
-            const sportKeys = ['basketball_wnba', 'baseball_mlb'];
-
-            // Also discover tennis sport keys that are in-season
-            try {
-                const sportsRes = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${oddsApiKey}`);
-                if (sportsRes.ok) {
-                    const sports = await sportsRes.json();
-                    sports.forEach(s => {
-                        if (s.key.startsWith('tennis_') && s.active) {
-                            sportKeys.push(s.key);
-                        }
-                    });
-                }
-            } catch (e) {
-                console.error('Failed to fetch sports list:', e);
-            }
-
-            const fetches = sportKeys.map(async (sportKey) => {
-                try {
-                    const url = `https://api.the-odds-api.com/v4/sports/${sportKey}/odds/?apiKey=${oddsApiKey}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&bookmakers=bovada,draftkings,fanduel`;
-                    const res = await fetch(url);
-                    if (!res.ok) return;
-                    const data = await res.json();
-                    data.forEach(event => {
-                        const matchKey = normalizeTeamName(event.home_team) + '|' + normalizeTeamName(event.away_team);
-                        oddsData[matchKey] = event;
-                    });
-                } catch (e) {
-                    console.error(`Odds fetch error for ${sportKey}:`, e);
-                }
-            });
-
-            await Promise.all(fetches);
-            renderMatches();
-        }
-
-        function normalizeTeamName(name) {
-            return name.toLowerCase()
-                .replace(/[^a-z0-9]/g, '')
-                .replace(/city$/, '')
-                .replace(/^the/, '');
-        }
-
-        function findOddsForMatch(home, away) {
-            const homeNorm = normalizeTeamName(home);
-            const awayNorm = normalizeTeamName(away);
-
-            // Try exact match first
-            const key1 = homeNorm + '|' + awayNorm;
-            if (oddsData[key1]) return oddsData[key1];
-
-            // Try reversed
-            const key2 = awayNorm + '|' + homeNorm;
-            if (oddsData[key2]) return oddsData[key2];
-
-            // Fuzzy match - check if team names are contained
-            for (const [key, event] of Object.entries(oddsData)) {
-                const eventHome = normalizeTeamName(event.home_team);
-                const eventAway = normalizeTeamName(event.away_team);
-
-                if ((homeNorm.includes(eventHome) || eventHome.includes(homeNorm)) &&
-                    (awayNorm.includes(eventAway) || eventAway.includes(awayNorm))) {
-                    return event;
-                }
-                if ((homeNorm.includes(eventAway) || eventAway.includes(homeNorm)) &&
-                    (awayNorm.includes(eventHome) || eventHome.includes(awayNorm))) {
-                    return event;
-                }
-            }
-
-            return null;
-        }
-
-        function extractOdds(oddsEvent, homeTeam) {
-            if (!oddsEvent || !oddsEvent.bookmakers || oddsEvent.bookmakers.length === 0) return null;
-
-            // Prefer Bovada, then DraftKings, then FanDuel, then first available
-            const preferred = ['bovada', 'draftkings', 'fanduel'];
-            let bookmaker = null;
-            for (const pref of preferred) {
-                bookmaker = oddsEvent.bookmakers.find(b => b.key === pref);
-                if (bookmaker) break;
-            }
-            if (!bookmaker) bookmaker = oddsEvent.bookmakers[0];
-
-            const result = { source: bookmaker.title };
-
-            bookmaker.markets.forEach(market => {
-                if (market.key === 'h2h') {
-                    result.moneyline = {};
-                    market.outcomes.forEach(o => {
-                        if (normalizeTeamName(o.name).includes(normalizeTeamName(homeTeam)) ||
-                            normalizeTeamName(homeTeam).includes(normalizeTeamName(o.name))) {
-                            result.moneyline.home = o.price;
-                        } else {
-                            result.moneyline.away = o.price;
-                        }
-                    });
-                    // Fallback if fuzzy match didn't work
-                    if (!result.moneyline.home && market.outcomes.length >= 2) {
-                        if (normalizeTeamName(market.outcomes[0].name) === normalizeTeamName(oddsEvent.home_team)) {
-                            result.moneyline.home = market.outcomes[0].price;
-                            result.moneyline.away = market.outcomes[1].price;
-                        } else {
-                            result.moneyline.home = market.outcomes[1].price;
-                            result.moneyline.away = market.outcomes[0].price;
-                        }
-                    }
-                }
-                if (market.key === 'spreads') {
-                    result.spread = {};
-                    market.outcomes.forEach(o => {
-                        if (normalizeTeamName(o.name).includes(normalizeTeamName(homeTeam)) ||
-                            normalizeTeamName(homeTeam).includes(normalizeTeamName(o.name))) {
-                            result.spread.home = { price: o.price, point: o.point };
-                        } else {
-                            result.spread.away = { price: o.price, point: o.point };
-                        }
-                    });
-                    if (!result.spread.home && market.outcomes.length >= 2) {
-                        if (normalizeTeamName(market.outcomes[0].name) === normalizeTeamName(oddsEvent.home_team)) {
-                            result.spread.home = { price: market.outcomes[0].price, point: market.outcomes[0].point };
-                            result.spread.away = { price: market.outcomes[1].price, point: market.outcomes[1].point };
-                        } else {
-                            result.spread.home = { price: market.outcomes[1].price, point: market.outcomes[1].point };
-                            result.spread.away = { price: market.outcomes[0].price, point: market.outcomes[0].point };
-                        }
-                    }
-                }
-                if (market.key === 'totals') {
-                    result.total = {};
-                    market.outcomes.forEach(o => {
-                        if (o.name === 'Over') {
-                            result.total.over = { price: o.price, point: o.point };
-                        } else {
-                            result.total.under = { price: o.price, point: o.point };
-                        }
-                    });
-                }
-            });
-
-            return result;
-        }
-
-        function formatOdds(price) {
-            if (price === undefined || price === null) return '-';
-            return price > 0 ? `+${price}` : `${price}`;
-        }
-
-        // --- DATA FETCHING (ESPN) ---
+        // --- DATA FETCHING ---
 
         async function fetchJSON(url) {
             const response = await fetch(url);
@@ -1045,6 +721,53 @@
             if (state === 'in') return 'live';
             if (state === 'post') return 'finished';
             return 'upcoming';
+        }
+
+        function parseOdds(competition) {
+            if (!competition.odds || competition.odds.length === 0) return null;
+
+            const odds = competition.odds[0];
+            const result = {
+                source: odds.provider ? odds.provider.name : 'DraftKings',
+                spread: odds.spread,
+                overUnder: odds.overUnder,
+                details: odds.details
+            };
+
+            if (odds.moneyline) {
+                result.moneyline = {
+                    home: odds.moneyline.home && odds.moneyline.home.close ? odds.moneyline.home.close.odds : null,
+                    away: odds.moneyline.away && odds.moneyline.away.close ? odds.moneyline.away.close.odds : null
+                };
+            }
+
+            if (odds.pointSpread) {
+                result.pointSpread = {
+                    home: {
+                        line: odds.pointSpread.home && odds.pointSpread.home.close ? odds.pointSpread.home.close.line : odds.spread,
+                        odds: odds.pointSpread.home && odds.pointSpread.home.close ? odds.pointSpread.home.close.odds : null
+                    },
+                    away: {
+                        line: odds.pointSpread.away && odds.pointSpread.away.close ? odds.pointSpread.away.close.line : (odds.spread ? -odds.spread : null),
+                        odds: odds.pointSpread.away && odds.pointSpread.away.close ? odds.pointSpread.away.close.odds : null
+                    }
+                };
+            }
+
+            if (odds.total) {
+                result.total = {
+                    over: {
+                        line: odds.total.over && odds.total.over.close ? odds.total.over.close.line : odds.overUnder,
+                        odds: odds.total.over && odds.total.over.close ? odds.total.over.close.odds : null
+                    },
+                    under: {
+                        line: odds.total.under && odds.total.under.close ? odds.total.under.close.line : odds.overUnder,
+                        odds: odds.total.under && odds.total.under.close ? odds.total.under.close.odds : null
+                    }
+                };
+            }
+
+            return result;
         }
 
         function parseBasketballGame(event) {
@@ -1076,7 +799,8 @@
                 awayScore: state === 'upcoming' ? '-' : away.score,
                 isLive: state === 'live',
                 homeWin: state === 'finished' && home.winner,
-                awayWin: state === 'finished' && away.winner
+                awayWin: state === 'finished' && away.winner,
+                odds: parseOdds(comp)
             };
         }
 
@@ -1109,7 +833,8 @@
                 awayScore: state === 'upcoming' ? '-' : away.score,
                 isLive: state === 'live',
                 homeWin: state === 'finished' && home.winner,
-                awayWin: state === 'finished' && away.winner
+                awayWin: state === 'finished' && away.winner,
+                odds: parseOdds(comp)
             };
 
             if (state === 'live' && comp.situation) {
@@ -1175,7 +900,8 @@
                             awaySets: p2Sets,
                             homeWin: state === 'finished' && p1.winner,
                             awayWin: state === 'finished' && p2.winner,
-                            tournament: `${tournamentName}${round ? ' - ' + round : ''}`
+                            tournament: `${tournamentName}${round ? ' - ' + round : ''}`,
+                            odds: null
                         });
                     });
                 });
@@ -1252,20 +978,8 @@
 
         async function fetchAllData() {
             renderLoading();
-
-            await Promise.all([
-                fetchWNBA(),
-                fetchMLB(),
-                fetchNBASummerLeague(),
-                fetchTennis()
-            ]);
-
-            if (oddsApiKey) {
-                await fetchOdds();
-            } else {
-                renderMatches();
-            }
-
+            await Promise.all([fetchWNBA(), fetchMLB(), fetchNBASummerLeague(), fetchTennis()]);
+            renderMatches();
             updateTime();
         }
 
@@ -1358,7 +1072,6 @@
 
             const homeLogoHTML = match.homeLogo ? `<img class="team-logo" src="${match.homeLogo}" alt="" onerror="this.style.display='none'">` : '';
             const awayLogoHTML = match.awayLogo ? `<img class="team-logo" src="${match.awayLogo}" alt="" onerror="this.style.display='none'">` : '';
-
             const oddsHTML = renderOddsCell(match);
 
             return `
@@ -1396,8 +1109,6 @@
                 return `<span class="set-score ${isLast ? 'current' : ''} ${won ? 'won' : ''}">${s}</span>`;
             }).join("");
 
-            const oddsHTML = renderOddsCell(match);
-
             return `
                 <div class="match-row" data-status="${match.status}">
                     <div class="match-status ${statusClass}">${statusText}</div>
@@ -1413,7 +1124,6 @@
                         <div class="tennis-score-row">${homeSetHTML || '<span class="set-score">-</span>'}</div>
                         <div class="tennis-score-row">${awaySetHTML || '<span class="set-score">-</span>'}</div>
                     </div>
-                    ${oddsHTML}
                 </div>
             `;
         }
@@ -1436,7 +1146,6 @@
 
             const homeLogoHTML = match.homeLogo ? `<img class="team-logo" src="${match.homeLogo}" alt="" onerror="this.style.display='none'">` : '';
             const awayLogoHTML = match.awayLogo ? `<img class="team-logo" src="${match.awayLogo}" alt="" onerror="this.style.display='none'">` : '';
-
             const oddsHTML = renderOddsCell(match);
 
             return `
@@ -1465,62 +1174,92 @@
         }
 
         function renderOddsCell(match) {
-            if (!showOdds || !oddsApiKey || match.status === 'finished') return '';
+            if (!showOdds || !match.odds || match.status === 'finished') return '';
 
-            const oddsEvent = findOddsForMatch(match.home, match.away);
-            if (!oddsEvent) return '<div class="match-odds"><span class="no-odds">--</span></div>';
-
-            const odds = extractOdds(oddsEvent, match.home);
-            if (!odds) return '<div class="match-odds"><span class="no-odds">--</span></div>';
-
+            const odds = match.odds;
             let html = '<div class="match-odds">';
 
             // Moneyline
-            if (odds.moneyline) {
-                const homeClass = odds.moneyline.home < 0 ? 'favorite' : 'underdog';
-                const awayClass = odds.moneyline.away < 0 ? 'favorite' : 'underdog';
+            if (odds.moneyline && (odds.moneyline.home || odds.moneyline.away)) {
+                const homeML = odds.moneyline.home;
+                const awayML = odds.moneyline.away;
+                const homeClass = homeML && parseInt(homeML) < 0 ? 'favorite' : 'underdog';
+                const awayClass = awayML && parseInt(awayML) < 0 ? 'favorite' : 'underdog';
                 html += `
                     <div class="odds-group">
                         <span class="odds-label">ML</span>
                         <div class="odds-pair">
-                            <div class="odds-cell ${homeClass}">${formatOdds(odds.moneyline.home)}</div>
-                            <div class="odds-cell ${awayClass}">${formatOdds(odds.moneyline.away)}</div>
+                            <div class="odds-cell ${homeClass}">${formatOddsVal(homeML)}</div>
+                            <div class="odds-cell ${awayClass}">${formatOddsVal(awayML)}</div>
                         </div>
                     </div>
                 `;
             }
 
             // Spread
-            if (odds.spread && odds.spread.home) {
-                const spreadSign = odds.spread.home.point > 0 ? '+' : '';
-                const spreadSign2 = odds.spread.away ? (odds.spread.away.point > 0 ? '+' : '') : '';
+            if (odds.pointSpread && odds.pointSpread.home) {
+                const homeLine = odds.pointSpread.home.line;
+                const awayLine = odds.pointSpread.away ? odds.pointSpread.away.line : (homeLine ? -homeLine : null);
                 html += `
                     <div class="odds-group">
                         <span class="odds-label">Spread</span>
                         <div class="odds-pair">
-                            <div class="odds-cell"><span class="odds-point">${spreadSign}${odds.spread.home.point}</span> ${formatOdds(odds.spread.home.price)}</div>
-                            <div class="odds-cell"><span class="odds-point">${spreadSign2}${odds.spread.away ? odds.spread.away.point : ''}</span> ${formatOdds(odds.spread.away ? odds.spread.away.price : null)}</div>
+                            <div class="odds-cell"><span class="odds-point">${formatSpread(homeLine)}</span>${formatOddsVal(odds.pointSpread.home.odds)}</div>
+                            <div class="odds-cell"><span class="odds-point">${formatSpread(awayLine)}</span>${formatOddsVal(odds.pointSpread.away ? odds.pointSpread.away.odds : null)}</div>
+                        </div>
+                    </div>
+                `;
+            } else if (odds.spread) {
+                html += `
+                    <div class="odds-group">
+                        <span class="odds-label">Spread</span>
+                        <div class="odds-pair">
+                            <div class="odds-cell">${formatSpread(odds.spread)}</div>
+                            <div class="odds-cell">${formatSpread(-odds.spread)}</div>
                         </div>
                     </div>
                 `;
             }
 
-            // Total
+            // Over/Under
             if (odds.total && odds.total.over) {
                 html += `
                     <div class="odds-group">
-                        <span class="odds-label">O/U ${odds.total.over.point}</span>
+                        <span class="odds-label">O/U ${odds.total.over.line || odds.overUnder}</span>
                         <div class="odds-pair">
-                            <div class="odds-cell">O ${formatOdds(odds.total.over.price)}</div>
-                            <div class="odds-cell">U ${formatOdds(odds.total.under ? odds.total.under.price : null)}</div>
+                            <div class="odds-cell">O ${formatOddsVal(odds.total.over.odds)}</div>
+                            <div class="odds-cell">U ${formatOddsVal(odds.total.under ? odds.total.under.odds : null)}</div>
+                        </div>
+                    </div>
+                `;
+            } else if (odds.overUnder) {
+                html += `
+                    <div class="odds-group">
+                        <span class="odds-label">O/U</span>
+                        <div class="odds-pair">
+                            <div class="odds-cell">${odds.overUnder}</div>
                         </div>
                     </div>
                 `;
             }
 
-            html += `<div class="bovada-badge">${odds.source}</div>`;
+            html += `<div class="dk-badge">${odds.source}</div>`;
             html += '</div>';
             return html;
+        }
+
+        function formatOddsVal(val) {
+            if (val === null || val === undefined) return '-';
+            const num = parseInt(val);
+            if (isNaN(num)) return val;
+            return num > 0 ? `+${num}` : `${num}`;
+        }
+
+        function formatSpread(val) {
+            if (val === null || val === undefined) return '-';
+            const num = parseFloat(val);
+            if (isNaN(num)) return val;
+            return num > 0 ? `+${num}` : `${num}`;
         }
 
         function updateCounts() {
@@ -1560,25 +1299,10 @@
             });
         });
 
-        // Allow pressing Enter in the API key input
-        document.getElementById('oddsApiKey').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') saveApiKey();
-        });
-
         // --- INIT & AUTO-REFRESH ---
 
         fetchAllData();
-
-        // Refresh scores every 30s, odds every 2 minutes
-        setInterval(async () => {
-            await Promise.all([fetchWNBA(), fetchMLB(), fetchNBASummerLeague(), fetchTennis()]);
-            renderMatches();
-            updateTime();
-        }, 30000);
-
-        setInterval(() => {
-            if (oddsApiKey) fetchOdds();
-        }, 120000);
+        setInterval(fetchAllData, 30000);
     </script>
 </body>
 </html>
