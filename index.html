@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Scores Dashboard</title>
+    <title>LiveScore Dashboard</title>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -31,7 +30,7 @@
         }
 
         .logo {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
             color: #fff;
             display: flex;
@@ -39,22 +38,19 @@
             gap: 8px;
         }
 
-        .logo .bolt {
-            color: #f7c948;
-            font-size: 28px;
-        }
+        .logo .bolt { color: #f7c948; font-size: 26px; }
 
         .header-right {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
         }
 
         .live-indicator {
             display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 12px;
+            font-size: 11px;
             color: #4ade80;
             font-weight: 600;
             text-transform: uppercase;
@@ -74,55 +70,99 @@
             50% { opacity: 0.5; transform: scale(0.8); }
         }
 
-        .last-updated {
-            font-size: 11px;
-            color: #888;
+        .last-updated { font-size: 11px; color: #888; }
+
+        .user-btn {
+            background: #252548;
+            border: 1px solid #3a3a5a;
+            color: #e0e0e0;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .sport-tabs {
+        .user-btn:hover { border-color: #f7c948; color: #f7c948; }
+
+        .user-btn.logged-in { border-color: #4ade80; color: #4ade80; }
+
+        .refresh-btn {
+            background: none;
+            border: 1px solid #2a2a4a;
+            color: #888;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover { border-color: #f7c948; color: #f7c948; }
+
+        /* Sport tabs with search */
+        .sport-nav {
             background: #12122a;
-            padding: 0 24px;
+            border-bottom: 2px solid #2a2a4a;
+            padding: 10px 24px;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .search-input {
+            flex: 1;
+            background: #1a1a2e;
+            border: 1px solid #2a2a4a;
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-size: 13px;
+            color: #e0e0e0;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus { border-color: #f7c948; }
+        .search-input::placeholder { color: #555; }
+
+        .sport-tabs {
             display: flex;
             gap: 0;
-            border-bottom: 2px solid #2a2a4a;
             overflow-x: auto;
+            padding-bottom: 4px;
         }
 
         .sport-tab {
-            padding: 14px 24px;
-            font-size: 14px;
+            padding: 8px 16px;
+            font-size: 12px;
             font-weight: 600;
             color: #888;
             cursor: pointer;
-            border-bottom: 3px solid transparent;
+            border-bottom: 2px solid transparent;
             transition: all 0.2s;
             white-space: nowrap;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
-        .sport-tab:hover {
-            color: #ccc;
-            background: rgba(255,255,255,0.03);
-        }
-
-        .sport-tab.active {
-            color: #f7c948;
-            border-bottom-color: #f7c948;
-        }
-
-        .sport-tab .tab-icon {
-            font-size: 18px;
-        }
+        .sport-tab:hover { color: #ccc; }
+        .sport-tab.active { color: #f7c948; border-bottom-color: #f7c948; }
 
         .sport-tab .game-count {
             background: #2a2a4a;
             color: #aaa;
-            font-size: 11px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-weight: 500;
+            font-size: 10px;
+            padding: 1px 5px;
+            border-radius: 8px;
         }
 
         .sport-tab.active .game-count {
@@ -136,15 +176,43 @@
             padding: 20px;
         }
 
-        .section {
-            margin-bottom: 24px;
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            padding: 8px 0;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            align-items: center;
         }
+
+        .filter-btn {
+            padding: 5px 12px;
+            font-size: 11px;
+            font-weight: 500;
+            border: 1px solid #2a2a4a;
+            background: transparent;
+            color: #888;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover { border-color: #555; color: #ccc; }
+
+        .filter-btn.active {
+            background: #f7c948;
+            color: #1a1a2e;
+            border-color: #f7c948;
+            font-weight: 600;
+        }
+
+        .section { margin-bottom: 20px; }
 
         .section-header {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 10px 16px;
+            padding: 8px 14px;
             background: #12122a;
             border-radius: 8px 8px 0 0;
             border: 1px solid #2a2a4a;
@@ -152,27 +220,18 @@
         }
 
         .section-header .league-icon {
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
             background: #2a2a4a;
             border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
-        }
-
-        .section-header .league-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: #ccc;
-        }
-
-        .section-header .league-country {
             font-size: 11px;
-            color: #666;
-            margin-left: auto;
         }
+
+        .section-header .league-name { font-size: 12px; font-weight: 600; color: #ccc; }
+        .section-header .league-country { font-size: 10px; color: #666; margin-left: auto; }
 
         .match-list {
             border: 1px solid #2a2a4a;
@@ -182,489 +241,412 @@
 
         .match-row {
             display: grid;
-            grid-template-columns: 80px 1fr auto auto;
+            grid-template-columns: 75px 1fr auto auto;
             align-items: center;
-            padding: 12px 16px;
+            padding: 10px 14px;
             background: #1e1e38;
             border-bottom: 1px solid #2a2a4a;
             transition: background 0.15s;
             cursor: pointer;
-            gap: 8px;
+            gap: 6px;
+            position: relative;
         }
 
-        .match-row:last-child {
-            border-bottom: none;
-        }
+        .match-row:last-child { border-bottom: none; }
+        .match-row:hover { background: #252548; }
 
-        .match-row:hover {
-            background: #252548;
-        }
+        .match-status { font-size: 11px; font-weight: 600; text-align: center; }
+        .match-status.live { color: #ef4444; }
+        .match-status.finished { color: #666; }
+        .match-status.upcoming { color: #60a5fa; }
+        .match-status .status-time { font-size: 10px; margin-top: 2px; color: #888; }
 
-        .match-status {
-            font-size: 12px;
-            font-weight: 600;
-            text-align: center;
-        }
+        .match-teams { display: flex; flex-direction: column; gap: 3px; padding: 0 12px; }
 
-        .match-status.live {
-            color: #ef4444;
-        }
+        .team-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 
-        .match-status.finished {
-            color: #666;
-        }
+        .team-logo { width: 18px; height: 18px; border-radius: 2px; }
 
-        .match-status.upcoming {
-            color: #60a5fa;
-        }
+        .team-name { flex: 1; color: #e0e0e0; }
+        .team-name.winner { color: #fff; font-weight: 600; }
 
-        .match-status .status-time {
-            font-size: 11px;
-            margin-top: 2px;
-            color: #888;
-        }
+        .match-scores { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; min-width: 35px; }
 
-        .match-teams {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            padding: 0 16px;
-        }
+        .score { font-size: 13px; font-weight: 700; color: #fff; min-width: 22px; text-align: center; }
+        .score.live-score { color: #ef4444; }
 
-        .team-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-        }
-
-        .team-logo {
-            width: 20px;
-            height: 20px;
-            border-radius: 2px;
-        }
-
-        .team-name {
-            flex: 1;
-            color: #e0e0e0;
-        }
-
-        .team-name.winner {
-            color: #fff;
-            font-weight: 600;
-        }
-
-        .match-scores {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            align-items: flex-end;
-            min-width: 40px;
-        }
-
-        .score {
-            font-size: 14px;
-            font-weight: 700;
-            color: #fff;
-            min-width: 24px;
-            text-align: center;
-        }
-
-        .score.live-score {
-            color: #ef4444;
-        }
-
-        /* Odds styling */
+        /* Odds */
         .match-odds {
             display: flex;
-            gap: 6px;
+            gap: 5px;
             align-items: center;
-            min-width: 180px;
+            min-width: 160px;
             justify-content: flex-end;
         }
 
-        .odds-group {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-            align-items: center;
-        }
-
-        .odds-label {
-            font-size: 9px;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+        .odds-group { display: flex; flex-direction: column; gap: 2px; align-items: center; }
+        .odds-label { font-size: 8px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
 
         .odds-cell {
             background: #252548;
             border: 1px solid #3a3a5a;
-            border-radius: 4px;
-            padding: 4px 8px;
-            font-size: 11px;
+            border-radius: 3px;
+            padding: 3px 6px;
+            font-size: 10px;
             font-weight: 600;
             color: #e0e0e0;
             text-align: center;
-            min-width: 52px;
-            transition: all 0.2s;
+            min-width: 44px;
         }
 
-        .odds-cell:hover {
-            border-color: #f7c948;
-            color: #f7c948;
-        }
-
-        .odds-cell.favorite {
-            color: #4ade80;
-        }
-
-        .odds-cell.underdog {
-            color: #f97316;
-        }
-
-        .odds-cell .odds-point {
-            font-size: 10px;
-            color: #888;
-            display: block;
-        }
-
-        .odds-pair {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-
-        .odds-source {
-            font-size: 9px;
-            color: #555;
-            text-align: center;
-            margin-top: 2px;
-        }
-
-        .no-odds {
-            font-size: 11px;
-            color: #444;
-            font-style: italic;
-        }
+        .odds-cell.favorite { color: #4ade80; }
+        .odds-cell.underdog { color: #f97316; }
+        .odds-cell .odds-point { font-size: 9px; color: #888; display: block; }
+        .odds-pair { display: flex; flex-direction: column; gap: 2px; }
 
         .dk-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 9px;
-            color: #888;
+            font-size: 8px;
+            color: #666;
             background: #1a1a2e;
-            padding: 2px 6px;
+            padding: 2px 5px;
             border-radius: 3px;
             border: 1px solid #2a2a4a;
         }
 
-        .tennis-scores {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
+        /* Vote bar */
+        .vote-container {
+            position: absolute;
+            bottom: 0;
+            left: 75px;
+            right: 0;
+            height: 0;
+            overflow: hidden;
+            transition: height 0.3s ease;
+            background: #151530;
+            border-top: 1px solid #2a2a4a;
         }
 
-        .tennis-score-row {
+        .match-row:hover .vote-container,
+        .vote-container.active {
+            height: 56px;
+        }
+
+        .vote-inner {
+            padding: 8px 14px;
             display: flex;
-            gap: 6px;
             align-items: center;
-            justify-content: flex-end;
+            gap: 10px;
         }
 
-        .set-score {
-            font-size: 12px;
-            font-weight: 600;
-            color: #aaa;
-            width: 18px;
-            text-align: center;
+        .vote-bar-wrap {
+            flex: 1;
+            height: 20px;
+            background: #2a2a4a;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            position: relative;
         }
 
-        .set-score.current {
-            color: #f7c948;
+        .vote-bar-home {
+            height: 100%;
+            background: linear-gradient(90deg, #4ade80, #22c55e);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
             font-weight: 700;
+            color: #000;
+            min-width: 30px;
         }
 
-        .set-score.won {
-            color: #fff;
-        }
-
-        .filter-bar {
+        .vote-bar-away {
+            height: 100%;
+            background: linear-gradient(90deg, #f97316, #ef4444);
+            transition: width 0.5s ease;
             display: flex;
-            gap: 8px;
-            padding: 12px 0;
-            margin-bottom: 8px;
-            flex-wrap: wrap;
             align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: #000;
+            min-width: 30px;
         }
 
-        .filter-btn {
-            padding: 6px 14px;
-            font-size: 12px;
-            font-weight: 500;
-            border: 1px solid #2a2a4a;
-            background: transparent;
-            color: #888;
-            border-radius: 20px;
+        .vote-btn {
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid #3a3a5a;
+            background: #252548;
+            color: #ccc;
+            font-size: 10px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
         }
 
-        .filter-btn:hover {
-            border-color: #555;
-            color: #ccc;
-        }
+        .vote-btn:hover { border-color: #f7c948; color: #f7c948; }
+        .vote-btn.voted { background: #f7c948; color: #1a1a2e; border-color: #f7c948; }
+        .vote-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .filter-btn.active {
-            background: #f7c948;
-            color: #1a1a2e;
-            border-color: #f7c948;
-            font-weight: 600;
-        }
+        .vote-count { font-size: 10px; color: #888; white-space: nowrap; }
 
-        .odds-toggle {
-            margin-left: auto;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .vote-login-msg { font-size: 10px; color: #666; font-style: italic; }
 
-        .odds-toggle label {
-            font-size: 12px;
-            color: #888;
-            cursor: pointer;
-        }
+        /* Tennis */
+        .tennis-scores { display: flex; flex-direction: column; gap: 3px; }
+        .tennis-score-row { display: flex; gap: 5px; align-items: center; justify-content: flex-end; }
 
-        .toggle-switch {
-            position: relative;
-            width: 36px;
-            height: 20px;
-            background: #2a2a4a;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
+        .set-score { font-size: 11px; font-weight: 600; color: #aaa; width: 16px; text-align: center; }
+        .set-score.current { color: #f7c948; font-weight: 700; }
+        .set-score.won { color: #fff; }
 
-        .toggle-switch.active {
-            background: #f7c948;
-        }
-
-        .toggle-switch::after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 16px;
-            height: 16px;
-            background: #fff;
-            border-radius: 50%;
-            transition: transform 0.2s;
-        }
-
-        .toggle-switch.active::after {
-            transform: translateX(16px);
-        }
-
-        .no-matches {
-            text-align: center;
-            padding: 40px;
-            color: #555;
-            font-size: 14px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 60px;
-            color: #666;
-        }
-
-        .loading .spinner {
-            width: 32px;
-            height: 32px;
-            border: 3px solid #2a2a4a;
-            border-top-color: #f7c948;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 0 auto 12px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .error-msg {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 8px;
-            padding: 12px 16px;
-            color: #f87171;
-            font-size: 13px;
-            margin-bottom: 16px;
-        }
-
-        .serving-dot {
-            width: 6px;
-            height: 6px;
-            background: #4ade80;
-            border-radius: 50%;
-            display: inline-block;
-        }
-
-        .base-indicator {
-            display: inline-flex;
-            gap: 2px;
-            margin-left: 6px;
-        }
-
-        .base {
-            width: 8px;
-            height: 8px;
-            border: 1px solid #555;
-            transform: rotate(45deg);
-            background: transparent;
-        }
-
-        .base.occupied {
-            background: #f7c948;
-            border-color: #f7c948;
-        }
-
-        .outs-indicator {
-            display: inline-flex;
-            gap: 3px;
-            margin-left: 8px;
-        }
-
-        .out-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            border: 1px solid #555;
-            background: transparent;
-        }
-
-        .out-dot.active {
-            background: #ef4444;
-            border-color: #ef4444;
-        }
+        /* MLB */
+        .base-indicator { display: inline-flex; gap: 2px; margin-left: 4px; }
+        .base { width: 7px; height: 7px; border: 1px solid #555; transform: rotate(45deg); background: transparent; }
+        .base.occupied { background: #f7c948; border-color: #f7c948; }
+        .outs-indicator { display: inline-flex; gap: 2px; margin-left: 6px; }
+        .out-dot { width: 5px; height: 5px; border-radius: 50%; border: 1px solid #555; background: transparent; }
+        .out-dot.active { background: #ef4444; border-color: #ef4444; }
 
         .live-badge {
             display: inline-block;
             background: #ef4444;
             color: #fff;
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 700;
-            padding: 2px 5px;
+            padding: 2px 4px;
             border-radius: 3px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             animation: pulse 1.5s infinite;
         }
 
-        .refresh-btn {
-            background: none;
-            border: 1px solid #2a2a4a;
-            color: #888;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            cursor: pointer;
-            transition: all 0.2s;
+        .no-matches { text-align: center; padding: 40px; color: #555; font-size: 13px; }
+
+        .loading { text-align: center; padding: 50px; color: #666; }
+
+        .loading .spinner {
+            width: 28px;
+            height: 28px;
+            border: 3px solid #2a2a4a;
+            border-top-color: #f7c948;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 10px;
         }
 
-        .refresh-btn:hover {
-            border-color: #f7c948;
-            color: #f7c948;
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .error-msg {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 6px;
+            padding: 10px 14px;
+            color: #f87171;
+            font-size: 12px;
+            margin-bottom: 12px;
         }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show { display: flex; }
+
+        .modal {
+            background: #1e1e38;
+            border: 1px solid #3a3a5a;
+            border-radius: 12px;
+            padding: 30px;
+            width: 380px;
+            max-width: 90vw;
+        }
+
+        .modal h2 { font-size: 18px; color: #fff; margin-bottom: 6px; }
+        .modal p { font-size: 12px; color: #888; margin-bottom: 20px; }
+
+        .modal-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #2a2a4a;
+        }
+
+        .modal-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: #888;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+
+        .modal-tab.active { color: #f7c948; border-bottom-color: #f7c948; }
+
+        .form-group { margin-bottom: 14px; }
+
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            background: #1a1a2e;
+            border: 1px solid #2a2a4a;
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 13px;
+            color: #e0e0e0;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus { border-color: #f7c948; }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: #f7c948;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            margin-top: 6px;
+        }
+
+        .submit-btn:hover { opacity: 0.9; }
+
+        .google-btn {
+            width: 100%;
+            padding: 10px;
+            background: #fff;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .google-btn:hover { background: #f5f5f5; }
+
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .auth-error {
+            color: #f87171;
+            font-size: 11px;
+            margin-top: 8px;
+            min-height: 16px;
+        }
+
+        .user-menu {
+            position: relative;
+        }
+
+        .user-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 6px;
+            background: #1e1e38;
+            border: 1px solid #3a3a5a;
+            border-radius: 8px;
+            padding: 8px 0;
+            min-width: 160px;
+            z-index: 200;
+        }
+
+        .user-dropdown.show { display: block; }
+
+        .user-dropdown-item {
+            padding: 8px 16px;
+            font-size: 12px;
+            color: #ccc;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .user-dropdown-item:hover { background: #252548; }
+        .user-dropdown-item.danger { color: #f87171; }
 
         @media (max-width: 768px) {
-            .match-row {
-                grid-template-columns: 65px 1fr auto;
-                padding: 10px 12px;
-            }
-
-            .match-odds {
-                display: none;
-            }
+            .match-row { grid-template-columns: 60px 1fr auto; padding: 8px 10px; }
+            .match-odds { display: none; }
+            .header { padding: 10px 14px; }
+            .sport-nav { padding: 8px 14px; }
+            .main-content { padding: 12px; }
+            .logo { font-size: 18px; }
         }
 
-        @media (max-width: 600px) {
-            .main-content {
-                padding: 12px;
-            }
-
-            .sport-tab {
-                padding: 12px 16px;
-                font-size: 13px;
-            }
-
-            .header {
-                padding: 10px 16px;
-            }
-        }
-
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #1a1a2e;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #2a2a4a;
-            border-radius: 3px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #3a3a5a;
-        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #1a1a2e; }
+        ::-webkit-scrollbar-thumb { background: #2a2a4a; border-radius: 3px; }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="logo">
             <span class="bolt">&#9889;</span>
-            LiveScore Dashboard
+            LiveScore
         </div>
         <div class="header-right">
             <div class="live-indicator">
                 <span class="live-dot"></span>
                 Live
             </div>
-            <button class="refresh-btn" onclick="fetchAllData()">&#8635; Refresh</button>
-            <div class="last-updated" id="lastUpdated">Updated: --:--:--</div>
+            <button class="refresh-btn" onclick="fetchAllData()">&#8635;</button>
+            <div class="last-updated" id="lastUpdated">--:--</div>
+            <div class="user-menu">
+                <button class="user-btn" id="userBtn" onclick="handleUserClick()">
+                    <span id="userIcon">&#128100;</span>
+                    <span id="userLabel">Sign In</span>
+                </button>
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="user-dropdown-item" id="userEmail"></div>
+                    <div class="user-dropdown-item danger" onclick="signOutUser()">Sign Out</div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="sport-tabs">
-        <div class="sport-tab active" data-sport="all">
-            <span class="tab-icon">&#127942;</span>
-            All Sports
-            <span class="game-count" id="count-all">0</span>
+    <div class="sport-nav">
+        <div class="search-bar">
+            <input type="text" class="search-input" id="sportSearch" placeholder="Search sports (NFL, NBA, Tennis, Soccer...)" oninput="filterSportTabs()">
         </div>
-        <div class="sport-tab" data-sport="wnba">
-            <span class="tab-icon">&#127936;</span>
-            WNBA
-            <span class="game-count" id="count-wnba">0</span>
-        </div>
-        <div class="sport-tab" data-sport="mlb">
-            <span class="tab-icon">&#9918;</span>
-            MLB
-            <span class="game-count" id="count-mlb">0</span>
-        </div>
-        <div class="sport-tab" data-sport="nba-sl">
-            <span class="tab-icon">&#127936;</span>
-            NBA Summer League
-            <span class="game-count" id="count-nba-sl">0</span>
-        </div>
-        <div class="sport-tab" data-sport="tennis">
-            <span class="tab-icon">&#127934;</span>
-            Tennis
-            <span class="game-count" id="count-tennis">0</span>
-        </div>
+        <div class="sport-tabs" id="sportTabs"></div>
     </div>
 
     <div class="main-content">
@@ -673,47 +655,154 @@
             <button class="filter-btn" data-filter="live">Live</button>
             <button class="filter-btn" data-filter="finished">Finished</button>
             <button class="filter-btn" data-filter="upcoming">Upcoming</button>
-            <div class="odds-toggle">
-                <label>Show Odds</label>
-                <div class="toggle-switch active" id="oddsSwitch" onclick="toggleOdds()"></div>
-            </div>
         </div>
-
         <div id="matchContainer">
-            <div class="loading">
-                <div class="spinner"></div>
-                Fetching live scores...
+            <div class="loading"><div class="spinner"></div>Fetching live scores...</div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div class="modal-overlay" id="authModal">
+        <div class="modal" style="position:relative">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <h2>Welcome</h2>
+            <p>Sign in to vote on game winners and see community predictions</p>
+            <div class="modal-tabs">
+                <div class="modal-tab active" onclick="switchAuthTab('login')">Sign In</div>
+                <div class="modal-tab" onclick="switchAuthTab('signup')">Create Account</div>
             </div>
+            <div id="authForm">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="authEmail" placeholder="you@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="authPassword" placeholder="Enter password">
+                </div>
+                <div class="form-group" id="nameGroup" style="display:none">
+                    <label>Display Name</label>
+                    <input type="text" id="authName" placeholder="Your name">
+                </div>
+                <button class="submit-btn" id="authSubmit" onclick="submitAuth()">Sign In</button>
+                <button class="google-btn" onclick="googleSignIn()">
+                    <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+                    Continue with Google
+                </button>
+            </div>
+            <div class="auth-error" id="authError"></div>
         </div>
     </div>
 
     <script>
-        // ESPN API endpoints
-        const ESPN_ENDPOINTS = {
-            wnba: 'https://site.api.espn.com/apis/site/v2/sports/basketball/wnba/scoreboard',
-            mlb: 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard',
-            'nba-sl': 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba-summer-las-vegas/scoreboard',
-            'tennis-atp': 'https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard',
-            'tennis-wta': 'https://site.api.espn.com/apis/site/v2/sports/tennis/wta/scoreboard'
+        // ===== FIREBASE CONFIG =====
+        // To enable accounts & voting, create a free Firebase project:
+        // 1. Go to https://console.firebase.google.com
+        // 2. Click "Create a project" (name it anything)
+        // 3. Go to Authentication > Sign-in method > Enable Email/Password AND Google
+        // 4. Go to Realtime Database > Create Database > Start in test mode
+        // 5. Go to Project Settings > General > scroll to "Your apps" > click web (</>)
+        // 6. Copy your config values below
+        const firebaseConfig = {
+            apiKey: "AIzaSyDXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            authDomain: "your-project.firebaseapp.com",
+            databaseURL: "https://your-project-default-rtdb.firebaseio.com",
+            projectId: "your-project",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "000000000000",
+            appId: "1:000000000000:web:xxxxxxxxxxxxxxxxxxxx"
         };
 
-        let matchData = {};
-        let activeSport = "all";
-        let activeFilter = "all";
-        let showOdds = true;
+        let firebaseReady = false;
+        let currentUser = null;
+        let votesRef = null;
 
-        function toggleOdds() {
-            showOdds = !showOdds;
-            document.getElementById('oddsSwitch').classList.toggle('active', showOdds);
+        try {
+            if (firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('XXXXX')) {
+                firebase.initializeApp(firebaseConfig);
+                firebaseReady = true;
+                votesRef = firebase.database().ref('votes');
+
+                firebase.auth().onAuthStateChanged(user => {
+                    currentUser = user;
+                    updateUserUI();
+                });
+            }
+        } catch (e) {
+            console.log('Firebase not configured - voting disabled, scores still work');
+        }
+
+        // ===== ALL ESPN SPORTS =====
+        const ALL_SPORTS = [
+            { key: 'nfl', name: 'NFL', icon: '&#127944;', endpoint: 'football/nfl/scoreboard', category: 'Football' },
+            { key: 'ncaaf', name: 'College Football', icon: '&#127944;', endpoint: 'football/college-football/scoreboard', category: 'Football' },
+            { key: 'nba', name: 'NBA', icon: '&#127936;', endpoint: 'basketball/nba/scoreboard', category: 'Basketball' },
+            { key: 'wnba', name: 'WNBA', icon: '&#127936;', endpoint: 'basketball/wnba/scoreboard', category: 'Basketball' },
+            { key: 'nba-sl', name: 'NBA Summer League', icon: '&#127936;', endpoint: 'basketball/nba-summer-las-vegas/scoreboard', category: 'Basketball' },
+            { key: 'ncaam', name: 'College Basketball', icon: '&#127936;', endpoint: 'basketball/mens-college-basketball/scoreboard', category: 'Basketball' },
+            { key: 'mlb', name: 'MLB', icon: '&#9918;', endpoint: 'baseball/mlb/scoreboard', category: 'Baseball' },
+            { key: 'nhl', name: 'NHL', icon: '&#127954;', endpoint: 'hockey/nhl/scoreboard', category: 'Hockey' },
+            { key: 'mls', name: 'MLS', icon: '&#9917;', endpoint: 'soccer/usa.1/scoreboard', category: 'Soccer' },
+            { key: 'epl', name: 'Premier League', icon: '&#9917;', endpoint: 'soccer/eng.1/scoreboard', category: 'Soccer' },
+            { key: 'laliga', name: 'La Liga', icon: '&#9917;', endpoint: 'soccer/esp.1/scoreboard', category: 'Soccer' },
+            { key: 'bundesliga', name: 'Bundesliga', icon: '&#9917;', endpoint: 'soccer/ger.1/scoreboard', category: 'Soccer' },
+            { key: 'seriea', name: 'Serie A', icon: '&#9917;', endpoint: 'soccer/ita.1/scoreboard', category: 'Soccer' },
+            { key: 'ligue1', name: 'Ligue 1', icon: '&#9917;', endpoint: 'soccer/fra.1/scoreboard', category: 'Soccer' },
+            { key: 'ucl', name: 'Champions League', icon: '&#9917;', endpoint: 'soccer/uefa.champions/scoreboard', category: 'Soccer' },
+            { key: 'ligamx', name: 'Liga MX', icon: '&#9917;', endpoint: 'soccer/mex.1/scoreboard', category: 'Soccer' },
+            { key: 'tennis-atp', name: 'Tennis ATP', icon: '&#127934;', endpoint: 'tennis/atp/scoreboard', category: 'Tennis', isTennis: true },
+            { key: 'tennis-wta', name: 'Tennis WTA', icon: '&#127934;', endpoint: 'tennis/wta/scoreboard', category: 'Tennis', isTennis: true },
+            { key: 'ufc', name: 'UFC / MMA', icon: '&#129354;', endpoint: 'mma/ufc/scoreboard', category: 'Fighting' },
+            { key: 'wnhl', name: 'PWHL', icon: '&#127954;', endpoint: 'hockey/womens-hockey/scoreboard', category: 'Hockey' },
+        ];
+
+        let matchData = {};
+        let activeSport = 'all';
+        let activeFilter = 'all';
+        let authMode = 'login';
+        let userVotes = {};
+
+        // ===== SPORT TABS =====
+        function renderSportTabs() {
+            const container = document.getElementById('sportTabs');
+            let html = `<div class="sport-tab active" data-sport="all" onclick="switchSport('all')">All <span class="game-count" id="count-all">0</span></div>`;
+
+            ALL_SPORTS.forEach(s => {
+                html += `<div class="sport-tab" data-sport="${s.key}" onclick="switchSport('${s.key}')">${s.icon} ${s.name} <span class="game-count" id="count-${s.key}">0</span></div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function filterSportTabs() {
+            const query = document.getElementById('sportSearch').value.toLowerCase();
+            document.querySelectorAll('.sport-tab').forEach(tab => {
+                const sport = tab.dataset.sport;
+                if (sport === 'all') {
+                    tab.style.display = '';
+                    return;
+                }
+                const sportDef = ALL_SPORTS.find(s => s.key === sport);
+                if (!sportDef) { tab.style.display = ''; return; }
+
+                const match = sportDef.name.toLowerCase().includes(query) ||
+                              sportDef.category.toLowerCase().includes(query) ||
+                              sportDef.key.toLowerCase().includes(query);
+                tab.style.display = match || !query ? '' : 'none';
+            });
+        }
+
+        function switchSport(key) {
+            activeSport = key;
+            document.querySelectorAll('.sport-tab').forEach(t => t.classList.toggle('active', t.dataset.sport === key));
             renderMatches();
         }
 
-        // --- DATA FETCHING ---
-
+        // ===== DATA FETCHING =====
         async function fetchJSON(url) {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            return response.json();
+            const r = await fetch(url);
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            return r.json();
         }
 
         function parseStatus(status) {
@@ -723,106 +812,49 @@
             return 'upcoming';
         }
 
-        function parseOdds(competition) {
-            if (!competition.odds || competition.odds.length === 0) return null;
+        function parseOdds(comp) {
+            if (!comp.odds || !comp.odds.length) return null;
+            const o = comp.odds[0];
+            const result = { source: o.provider ? o.provider.name : 'DraftKings', spread: o.spread, overUnder: o.overUnder, details: o.details };
 
-            const odds = competition.odds[0];
-            const result = {
-                source: odds.provider ? odds.provider.name : 'DraftKings',
-                spread: odds.spread,
-                overUnder: odds.overUnder,
-                details: odds.details
-            };
-
-            if (odds.moneyline) {
+            if (o.moneyline) {
                 result.moneyline = {
-                    home: odds.moneyline.home && odds.moneyline.home.close ? odds.moneyline.home.close.odds : null,
-                    away: odds.moneyline.away && odds.moneyline.away.close ? odds.moneyline.away.close.odds : null
+                    home: o.moneyline.home && o.moneyline.home.close ? o.moneyline.home.close.odds : null,
+                    away: o.moneyline.away && o.moneyline.away.close ? o.moneyline.away.close.odds : null
                 };
             }
-
-            if (odds.pointSpread) {
+            if (o.pointSpread) {
                 result.pointSpread = {
-                    home: {
-                        line: odds.pointSpread.home && odds.pointSpread.home.close ? odds.pointSpread.home.close.line : odds.spread,
-                        odds: odds.pointSpread.home && odds.pointSpread.home.close ? odds.pointSpread.home.close.odds : null
-                    },
-                    away: {
-                        line: odds.pointSpread.away && odds.pointSpread.away.close ? odds.pointSpread.away.close.line : (odds.spread ? -odds.spread : null),
-                        odds: odds.pointSpread.away && odds.pointSpread.away.close ? odds.pointSpread.away.close.odds : null
-                    }
+                    home: { line: o.pointSpread.home?.close?.line || o.spread, odds: o.pointSpread.home?.close?.odds },
+                    away: { line: o.pointSpread.away?.close?.line || (o.spread ? -o.spread : null), odds: o.pointSpread.away?.close?.odds }
                 };
             }
-
-            if (odds.total) {
+            if (o.total) {
                 result.total = {
-                    over: {
-                        line: odds.total.over && odds.total.over.close ? odds.total.over.close.line : odds.overUnder,
-                        odds: odds.total.over && odds.total.over.close ? odds.total.over.close.odds : null
-                    },
-                    under: {
-                        line: odds.total.under && odds.total.under.close ? odds.total.under.close.line : odds.overUnder,
-                        odds: odds.total.under && odds.total.under.close ? odds.total.under.close.odds : null
-                    }
+                    over: { line: o.total.over?.close?.line || o.overUnder, odds: o.total.over?.close?.odds },
+                    under: { line: o.total.under?.close?.line || o.overUnder, odds: o.total.under?.close?.odds }
                 };
             }
-
             return result;
         }
 
-        function parseBasketballGame(event) {
+        function parseStandardGame(event, sportKey) {
             const comp = event.competitions[0];
             const status = comp.status;
             const state = parseStatus(status);
-
-            const home = comp.competitors.find(c => c.homeAway === 'home');
-            const away = comp.competitors.find(c => c.homeAway === 'away');
-
-            let timeDisplay = '';
-            if (state === 'live') {
-                timeDisplay = status.type.shortDetail || status.type.detail || '';
-            } else if (state === 'finished') {
-                timeDisplay = 'Final';
-            } else {
-                const d = new Date(event.date);
-                timeDisplay = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-            }
-
-            return {
-                status: state,
-                time: timeDisplay,
-                home: home.team.displayName,
-                away: away.team.displayName,
-                homeLogo: home.team.logo || '',
-                awayLogo: away.team.logo || '',
-                homeScore: state === 'upcoming' ? '-' : home.score,
-                awayScore: state === 'upcoming' ? '-' : away.score,
-                isLive: state === 'live',
-                homeWin: state === 'finished' && home.winner,
-                awayWin: state === 'finished' && away.winner,
-                odds: parseOdds(comp)
-            };
-        }
-
-        function parseMLBGame(event) {
-            const comp = event.competitions[0];
-            const status = comp.status;
-            const state = parseStatus(status);
-
-            const home = comp.competitors.find(c => c.homeAway === 'home');
-            const away = comp.competitors.find(c => c.homeAway === 'away');
+            const home = comp.competitors.find(c => c.homeAway === 'home') || comp.competitors[0];
+            const away = comp.competitors.find(c => c.homeAway === 'away') || comp.competitors[1];
 
             let timeDisplay = '';
-            if (state === 'live') {
-                timeDisplay = status.type.shortDetail || status.type.detail || '';
-            } else if (state === 'finished') {
-                timeDisplay = 'Final';
-            } else {
+            if (state === 'live') timeDisplay = status.type.shortDetail || status.type.detail || 'Live';
+            else if (state === 'finished') timeDisplay = status.type.detail || 'Final';
+            else {
                 const d = new Date(event.date);
                 timeDisplay = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
             }
 
             const match = {
+                id: event.id,
                 status: state,
                 time: timeDisplay,
                 home: home.team.displayName,
@@ -834,473 +866,432 @@
                 isLive: state === 'live',
                 homeWin: state === 'finished' && home.winner,
                 awayWin: state === 'finished' && away.winner,
-                odds: parseOdds(comp)
+                odds: parseOdds(comp),
+                sportKey: sportKey
             };
 
-            if (state === 'live' && comp.situation) {
-                match.bases = [
-                    !!comp.situation.onFirst,
-                    !!comp.situation.onSecond,
-                    !!comp.situation.onThird
-                ];
+            if (state === 'live' && comp.situation && sportKey === 'mlb') {
+                match.bases = [!!comp.situation.onFirst, !!comp.situation.onSecond, !!comp.situation.onThird];
                 match.outs = comp.situation.outs || 0;
             }
 
             return match;
         }
 
-        function parseTennisData(data) {
+        function parseTennisData(data, sportKey) {
             const matches = [];
             if (!data.events) return matches;
 
             data.events.forEach(event => {
-                const tournamentName = event.name || 'Tournament';
-                const groupings = event.groupings || [];
+                const name = event.name || 'Tournament';
+                (event.groupings || []).forEach(g => {
+                    if (g.grouping?.slug?.includes('doubles')) return;
+                    (g.competitions || []).forEach(comp => {
+                        const state = parseStatus(comp.status);
+                        const cs = comp.competitors || [];
+                        if (cs.length < 2) return;
 
-                groupings.forEach(grouping => {
-                    if (grouping.grouping && grouping.grouping.slug && grouping.grouping.slug.includes('doubles')) return;
-
-                    const competitions = grouping.competitions || [];
-                    competitions.forEach(comp => {
-                        const status = comp.status;
-                        const state = parseStatus(status);
-                        const competitors = comp.competitors || [];
-                        if (competitors.length < 2) return;
-
-                        const p1 = competitors[0];
-                        const p2 = competitors[1];
-
-                        const p1Name = p1.athlete ? p1.athlete.shortName || p1.athlete.displayName : 'TBD';
-                        const p2Name = p2.athlete ? p2.athlete.shortName || p2.athlete.displayName : 'TBD';
-
+                        const p1 = cs[0], p2 = cs[1];
+                        const p1Name = p1.athlete?.shortName || p1.athlete?.displayName || 'TBD';
+                        const p2Name = p2.athlete?.shortName || p2.athlete?.displayName || 'TBD';
                         const p1Sets = (p1.linescores || []).map(s => Math.round(s.value));
                         const p2Sets = (p2.linescores || []).map(s => Math.round(s.value));
 
                         let timeDisplay = '';
-                        if (state === 'live') {
-                            const setNum = p1Sets.length;
-                            timeDisplay = setNum > 0 ? `Set ${setNum}` : 'Live';
-                        } else if (state === 'finished') {
-                            timeDisplay = 'Finished';
-                        } else {
+                        if (state === 'live') timeDisplay = p1Sets.length ? `Set ${p1Sets.length}` : 'Live';
+                        else if (state === 'finished') timeDisplay = 'Final';
+                        else {
                             const d = new Date(comp.startDate || comp.date);
                             timeDisplay = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
                         }
 
-                        const round = comp.round ? comp.round.displayName : '';
-
+                        const round = comp.round?.displayName || '';
                         matches.push({
-                            status: state,
-                            time: timeDisplay,
-                            home: p1Name,
-                            away: p2Name,
-                            isLive: state === 'live',
-                            isTennis: true,
-                            homeSets: p1Sets,
-                            awaySets: p2Sets,
+                            id: comp.id,
+                            status: state, time: timeDisplay,
+                            home: p1Name, away: p2Name,
+                            isLive: state === 'live', isTennis: true,
+                            homeSets: p1Sets, awaySets: p2Sets,
                             homeWin: state === 'finished' && p1.winner,
                             awayWin: state === 'finished' && p2.winner,
-                            tournament: `${tournamentName}${round ? ' - ' + round : ''}`,
-                            odds: null
+                            tournament: `${name}${round ? ' - ' + round : ''}`,
+                            odds: null, sportKey: sportKey
                         });
                     });
                 });
             });
-
             return matches;
         }
 
-        async function fetchWNBA() {
+        async function fetchSport(sport) {
             try {
-                const data = await fetchJSON(ESPN_ENDPOINTS.wnba);
-                matchData.wnba = {
-                    league: 'WNBA',
-                    country: 'USA',
-                    icon: '&#127936;',
-                    matches: (data.events || []).map(parseBasketballGame)
-                };
+                const url = `https://site.api.espn.com/apis/site/v2/sports/${sport.endpoint}`;
+                const data = await fetchJSON(url);
+
+                if (sport.isTennis) {
+                    const matches = parseTennisData(data, sport.key);
+                    matches.sort((a, b) => ({ live: 0, upcoming: 1, finished: 2 }[a.status] || 0) - ({ live: 0, upcoming: 1, finished: 2 }[b.status] || 0));
+                    matchData[sport.key] = { league: sport.name, country: sport.category, icon: sport.icon, matches };
+                } else {
+                    const matches = (data.events || []).map(e => parseStandardGame(e, sport.key));
+                    matchData[sport.key] = { league: sport.name, country: sport.category, icon: sport.icon, matches };
+                }
             } catch (e) {
-                matchData.wnba = { league: 'WNBA', country: 'USA', icon: '&#127936;', matches: [], error: e.message };
-            }
-        }
-
-        async function fetchMLB() {
-            try {
-                const data = await fetchJSON(ESPN_ENDPOINTS.mlb);
-                matchData.mlb = {
-                    league: 'MLB',
-                    country: 'USA',
-                    icon: '&#9918;',
-                    matches: (data.events || []).map(parseMLBGame)
-                };
-            } catch (e) {
-                matchData.mlb = { league: 'MLB', country: 'USA', icon: '&#9918;', matches: [], error: e.message };
-            }
-        }
-
-        async function fetchNBASummerLeague() {
-            try {
-                const data = await fetchJSON(ESPN_ENDPOINTS['nba-sl']);
-                matchData['nba-sl'] = {
-                    league: 'NBA Summer League',
-                    country: 'Las Vegas',
-                    icon: '&#127936;',
-                    matches: (data.events || []).map(parseBasketballGame)
-                };
-            } catch (e) {
-                matchData['nba-sl'] = { league: 'NBA Summer League', country: 'Las Vegas', icon: '&#127936;', matches: [], error: e.message };
-            }
-        }
-
-        async function fetchTennis() {
-            try {
-                const [atpData, wtaData] = await Promise.all([
-                    fetchJSON(ESPN_ENDPOINTS['tennis-atp']),
-                    fetchJSON(ESPN_ENDPOINTS['tennis-wta'])
-                ]);
-
-                const allMatches = [...parseTennisData(atpData), ...parseTennisData(wtaData)];
-                allMatches.sort((a, b) => {
-                    const order = { live: 0, upcoming: 1, finished: 2 };
-                    return (order[a.status] || 0) - (order[b.status] || 0);
-                });
-
-                matchData.tennis = {
-                    league: 'ATP / WTA Tour',
-                    country: 'International',
-                    icon: '&#127934;',
-                    matches: allMatches
-                };
-            } catch (e) {
-                matchData.tennis = { league: 'ATP / WTA Tour', country: 'International', icon: '&#127934;', matches: [], error: e.message };
+                matchData[sport.key] = { league: sport.name, country: sport.category, icon: sport.icon, matches: [], error: e.message };
             }
         }
 
         async function fetchAllData() {
-            renderLoading();
-            await Promise.all([fetchWNBA(), fetchMLB(), fetchNBASummerLeague(), fetchTennis()]);
+            document.getElementById('matchContainer').innerHTML = '<div class="loading"><div class="spinner"></div>Fetching live scores...</div>';
+            await Promise.all(ALL_SPORTS.map(s => fetchSport(s)));
             renderMatches();
             updateTime();
+            updateCounts();
         }
 
-        // --- RENDERING ---
-
-        function renderLoading() {
-            document.getElementById('matchContainer').innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    Fetching live scores...
-                </div>
-            `;
+        // ===== VOTING =====
+        function getMatchVoteKey(match) {
+            return `${match.sportKey}_${match.id}`;
         }
 
+        function castVote(matchId, sportKey, team) {
+            if (!currentUser) { openModal(); return; }
+            if (!firebaseReady) return;
+
+            const key = `${sportKey}_${matchId}`;
+            const voteData = { team, user: currentUser.uid, timestamp: Date.now() };
+
+            votesRef.child(key).child(currentUser.uid).set(voteData);
+            userVotes[key] = team;
+            renderMatches();
+        }
+
+        function loadVotes(matchKey, callback) {
+            if (!firebaseReady || !votesRef) { callback({ home: 0, away: 0 }); return; }
+
+            votesRef.child(matchKey).once('value', snap => {
+                const votes = snap.val() || {};
+                let home = 0, away = 0;
+                Object.values(votes).forEach(v => {
+                    if (v.team === 'home') home++;
+                    else away++;
+                });
+                callback({ home, away });
+            });
+        }
+
+        function loadUserVotes() {
+            if (!firebaseReady || !currentUser || !votesRef) return;
+
+            votesRef.orderByChild('user').equalTo(currentUser.uid).once('value', snap => {
+                // This won't work with nested structure, so we'll load per-match instead
+            });
+        }
+
+        // ===== AUTH =====
+        function handleUserClick() {
+            if (currentUser) {
+                document.getElementById('userDropdown').classList.toggle('show');
+            } else {
+                openModal();
+            }
+        }
+
+        function openModal() { document.getElementById('authModal').classList.add('show'); }
+        function closeModal() { document.getElementById('authModal').classList.remove('show'); }
+
+        function switchAuthTab(mode) {
+            authMode = mode;
+            document.querySelectorAll('.modal-tab').forEach((t, i) => t.classList.toggle('active', (i === 0 && mode === 'login') || (i === 1 && mode === 'signup')));
+            document.getElementById('nameGroup').style.display = mode === 'signup' ? 'block' : 'none';
+            document.getElementById('authSubmit').textContent = mode === 'login' ? 'Sign In' : 'Create Account';
+            document.getElementById('authError').textContent = '';
+        }
+
+        async function submitAuth() {
+            if (!firebaseReady) {
+                document.getElementById('authError').textContent = 'Firebase not configured. See instructions in source code.';
+                return;
+            }
+
+            const email = document.getElementById('authEmail').value.trim();
+            const pass = document.getElementById('authPassword').value;
+            const errEl = document.getElementById('authError');
+            errEl.textContent = '';
+
+            try {
+                if (authMode === 'login') {
+                    await firebase.auth().signInWithEmailAndPassword(email, pass);
+                } else {
+                    const name = document.getElementById('authName').value.trim();
+                    const cred = await firebase.auth().createUserWithEmailAndPassword(email, pass);
+                    if (name) await cred.user.updateProfile({ displayName: name });
+                }
+                closeModal();
+            } catch (e) {
+                errEl.textContent = e.message.replace('Firebase: ', '').replace(/\(auth\/.*\)/, '');
+            }
+        }
+
+        async function googleSignIn() {
+            if (!firebaseReady) {
+                document.getElementById('authError').textContent = 'Firebase not configured. See instructions in source code.';
+                return;
+            }
+            try {
+                await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider());
+                closeModal();
+            } catch (e) {
+                document.getElementById('authError').textContent = e.message.replace('Firebase: ', '');
+            }
+        }
+
+        function signOutUser() {
+            if (firebaseReady) firebase.auth().signOut();
+            currentUser = null;
+            userVotes = {};
+            document.getElementById('userDropdown').classList.remove('show');
+            updateUserUI();
+            renderMatches();
+        }
+
+        function updateUserUI() {
+            const btn = document.getElementById('userBtn');
+            const label = document.getElementById('userLabel');
+            const emailEl = document.getElementById('userEmail');
+
+            if (currentUser) {
+                label.textContent = currentUser.displayName || currentUser.email.split('@')[0];
+                btn.classList.add('logged-in');
+                emailEl.textContent = currentUser.email;
+            } else {
+                label.textContent = 'Sign In';
+                btn.classList.remove('logged-in');
+            }
+        }
+
+        // Close dropdown on outside click
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.user-menu')) {
+                document.getElementById('userDropdown').classList.remove('show');
+            }
+        });
+
+        // ===== RENDERING =====
         function renderMatches() {
-            const container = document.getElementById("matchContainer");
-            container.innerHTML = "";
+            const container = document.getElementById('matchContainer');
+            container.innerHTML = '';
 
-            const sportsToShow = activeSport === "all"
-                ? Object.keys(matchData)
-                : [activeSport];
-
+            const sportsToShow = activeSport === 'all' ? ALL_SPORTS.map(s => s.key) : [activeSport];
             let totalVisible = 0;
 
             sportsToShow.forEach(sportKey => {
                 const sport = matchData[sportKey];
                 if (!sport) return;
 
-                if (sport.error && sport.matches.length === 0) {
-                    container.innerHTML += `<div class="error-msg">Failed to load ${sport.league}: ${sport.error}</div>`;
+                if (sport.error && !sport.matches.length) {
+                    if (activeSport !== 'all') container.innerHTML += `<div class="error-msg">Failed to load ${sport.league}: ${sport.error}</div>`;
                     return;
                 }
 
-                const filteredMatches = activeFilter === "all"
-                    ? sport.matches
-                    : sport.matches.filter(m => m.status === activeFilter);
+                const filtered = activeFilter === 'all' ? sport.matches : sport.matches.filter(m => m.status === activeFilter);
+                if (!filtered.length) return;
 
-                if (filteredMatches.length === 0) return;
+                totalVisible += filtered.length;
 
-                totalVisible += filteredMatches.length;
-
-                const tournamentGroups = {};
-                filteredMatches.forEach(match => {
-                    const key = match.tournament || sport.league;
-                    if (!tournamentGroups[key]) tournamentGroups[key] = [];
-                    tournamentGroups[key].push(match);
+                const groups = {};
+                filtered.forEach(m => {
+                    const k = m.tournament || sport.league;
+                    if (!groups[k]) groups[k] = [];
+                    groups[k].push(m);
                 });
 
-                Object.entries(tournamentGroups).forEach(([tournament, matches]) => {
-                    const group = document.createElement("div");
-                    group.className = "section";
-
-                    group.innerHTML = `
+                Object.entries(groups).forEach(([tournament, matches]) => {
+                    const sec = document.createElement('div');
+                    sec.className = 'section';
+                    sec.innerHTML = `
                         <div class="section-header">
                             <div class="league-icon">${sport.icon}</div>
                             <div class="league-name">${tournament}</div>
                             <div class="league-country">${sport.country}</div>
                         </div>
-                        <div class="match-list">
-                            ${matches.map(match => renderMatchRow(match, sportKey)).join("")}
-                        </div>
+                        <div class="match-list">${matches.map(m => renderMatchRow(m)).join('')}</div>
                     `;
-
-                    container.appendChild(group);
+                    container.appendChild(sec);
                 });
             });
 
-            if (totalVisible === 0) {
-                container.innerHTML += `<div class="no-matches">No matches found for this filter</div>`;
-            }
+            if (!totalVisible) container.innerHTML = '<div class="no-matches">No matches found</div>';
 
-            updateCounts();
+            // Load votes for visible live/upcoming matches
+            document.querySelectorAll('.vote-container[data-votekey]').forEach(el => {
+                const key = el.dataset.votekey;
+                loadVotes(key, counts => {
+                    const total = counts.home + counts.away || 1;
+                    const homePct = Math.round((counts.home / total) * 100);
+                    const awayPct = 100 - homePct;
+                    const homeBar = el.querySelector('.vote-bar-home');
+                    const awayBar = el.querySelector('.vote-bar-away');
+                    const countEl = el.querySelector('.vote-count');
+                    if (homeBar) homeBar.style.width = `${homePct}%`;
+                    if (awayBar) awayBar.style.width = `${awayPct}%`;
+                    if (homeBar) homeBar.textContent = counts.home ? `${homePct}%` : '';
+                    if (awayBar) awayBar.textContent = counts.away ? `${awayPct}%` : '';
+                    if (countEl) countEl.textContent = `${counts.home + counts.away} votes`;
+                });
+            });
         }
 
-        function renderMatchRow(match, sportKey) {
-            const statusClass = match.status;
+        function renderMatchRow(match) {
+            const sc = match.status;
             const statusText = match.isLive
                 ? `<span class="live-badge">LIVE</span><div class="status-time">${match.time}</div>`
-                : match.status === "finished"
-                    ? "FT"
-                    : match.time;
+                : sc === 'finished' ? match.time : match.time;
 
-            if (match.isTennis) {
-                return renderTennisRow(match, statusClass, statusText);
-            }
-
-            if (sportKey === "mlb" && match.isLive && match.bases) {
-                return renderMLBRow(match, statusClass, statusText);
-            }
+            if (match.isTennis) return renderTennisRow(match, sc, statusText);
 
             const homeLogoHTML = match.homeLogo ? `<img class="team-logo" src="${match.homeLogo}" alt="" onerror="this.style.display='none'">` : '';
             const awayLogoHTML = match.awayLogo ? `<img class="team-logo" src="${match.awayLogo}" alt="" onerror="this.style.display='none'">` : '';
             const oddsHTML = renderOddsCell(match);
+            const voteHTML = (sc === 'live' || sc === 'upcoming') ? renderVoteBar(match) : '';
+
+            const basesHTML = match.bases ? `<div style="margin-top:3px"><span class="base-indicator"><span class="base ${match.bases[0]?'occupied':''}"></span><span class="base ${match.bases[1]?'occupied':''}"></span><span class="base ${match.bases[2]?'occupied':''}"></span></span><span class="outs-indicator"><span class="out-dot ${match.outs>=1?'active':''}"></span><span class="out-dot ${match.outs>=2?'active':''}"></span></span></div>` : '';
 
             return `
-                <div class="match-row" data-status="${match.status}">
-                    <div class="match-status ${statusClass}">${statusText}</div>
+                <div class="match-row" data-status="${sc}">
+                    <div class="match-status ${sc}">${statusText}${basesHTML}</div>
                     <div class="match-teams">
-                        <div class="team-row">
-                            ${homeLogoHTML}
-                            <span class="team-name ${match.homeWin ? 'winner' : ''}">${match.home}</span>
-                        </div>
-                        <div class="team-row">
-                            ${awayLogoHTML}
-                            <span class="team-name ${match.awayWin ? 'winner' : ''}">${match.away}</span>
-                        </div>
+                        <div class="team-row">${homeLogoHTML}<span class="team-name ${match.homeWin?'winner':''}">${match.home}</span></div>
+                        <div class="team-row">${awayLogoHTML}<span class="team-name ${match.awayWin?'winner':''}">${match.away}</span></div>
                     </div>
                     <div class="match-scores">
-                        <span class="score ${match.isLive ? 'live-score' : ''}">${match.homeScore}</span>
-                        <span class="score ${match.isLive ? 'live-score' : ''}">${match.awayScore}</span>
+                        <span class="score ${match.isLive?'live-score':''}">${match.homeScore}</span>
+                        <span class="score ${match.isLive?'live-score':''}">${match.awayScore}</span>
                     </div>
                     ${oddsHTML}
+                    ${voteHTML}
                 </div>
             `;
         }
 
-        function renderTennisRow(match, statusClass, statusText) {
+        function renderTennisRow(match, sc, statusText) {
             const homeSetHTML = match.homeSets.map((s, i) => {
                 const isLast = i === match.homeSets.length - 1 && match.isLive;
                 const won = !match.isLive && s > (match.awaySets[i] || 0);
-                return `<span class="set-score ${isLast ? 'current' : ''} ${won ? 'won' : ''}">${s}</span>`;
-            }).join("");
+                return `<span class="set-score ${isLast?'current':''} ${won?'won':''}">${s}</span>`;
+            }).join('');
 
             const awaySetHTML = match.awaySets.map((s, i) => {
                 const isLast = i === match.awaySets.length - 1 && match.isLive;
                 const won = !match.isLive && s > (match.homeSets[i] || 0);
-                return `<span class="set-score ${isLast ? 'current' : ''} ${won ? 'won' : ''}">${s}</span>`;
-            }).join("");
+                return `<span class="set-score ${isLast?'current':''} ${won?'won':''}">${s}</span>`;
+            }).join('');
+
+            const voteHTML = (sc === 'live' || sc === 'upcoming') ? renderVoteBar(match) : '';
 
             return `
-                <div class="match-row" data-status="${match.status}">
-                    <div class="match-status ${statusClass}">${statusText}</div>
+                <div class="match-row" data-status="${sc}">
+                    <div class="match-status ${sc}">${statusText}</div>
                     <div class="match-teams">
-                        <div class="team-row">
-                            <span class="team-name ${match.homeWin ? 'winner' : ''}">${match.home}</span>
-                        </div>
-                        <div class="team-row">
-                            <span class="team-name ${match.awayWin ? 'winner' : ''}">${match.away}</span>
-                        </div>
+                        <div class="team-row"><span class="team-name ${match.homeWin?'winner':''}">${match.home}</span></div>
+                        <div class="team-row"><span class="team-name ${match.awayWin?'winner':''}">${match.away}</span></div>
                     </div>
                     <div class="tennis-scores">
                         <div class="tennis-score-row">${homeSetHTML || '<span class="set-score">-</span>'}</div>
                         <div class="tennis-score-row">${awaySetHTML || '<span class="set-score">-</span>'}</div>
                     </div>
-                </div>
-            `;
-        }
-
-        function renderMLBRow(match, statusClass, statusText) {
-            const basesHTML = match.bases ? `
-                <span class="base-indicator">
-                    <span class="base ${match.bases[0] ? 'occupied' : ''}"></span>
-                    <span class="base ${match.bases[1] ? 'occupied' : ''}"></span>
-                    <span class="base ${match.bases[2] ? 'occupied' : ''}"></span>
-                </span>
-            ` : "";
-
-            const outsHTML = match.outs !== undefined ? `
-                <span class="outs-indicator">
-                    <span class="out-dot ${match.outs >= 1 ? 'active' : ''}"></span>
-                    <span class="out-dot ${match.outs >= 2 ? 'active' : ''}"></span>
-                </span>
-            ` : "";
-
-            const homeLogoHTML = match.homeLogo ? `<img class="team-logo" src="${match.homeLogo}" alt="" onerror="this.style.display='none'">` : '';
-            const awayLogoHTML = match.awayLogo ? `<img class="team-logo" src="${match.awayLogo}" alt="" onerror="this.style.display='none'">` : '';
-            const oddsHTML = renderOddsCell(match);
-
-            return `
-                <div class="match-row" data-status="${match.status}">
-                    <div class="match-status ${statusClass}">
-                        ${statusText}
-                        <div style="margin-top:4px">${basesHTML}${outsHTML}</div>
-                    </div>
-                    <div class="match-teams">
-                        <div class="team-row">
-                            ${homeLogoHTML}
-                            <span class="team-name">${match.home}</span>
-                        </div>
-                        <div class="team-row">
-                            ${awayLogoHTML}
-                            <span class="team-name">${match.away}</span>
-                        </div>
-                    </div>
-                    <div class="match-scores">
-                        <span class="score live-score">${match.homeScore}</span>
-                        <span class="score live-score">${match.awayScore}</span>
-                    </div>
-                    ${oddsHTML}
+                    ${voteHTML}
                 </div>
             `;
         }
 
         function renderOddsCell(match) {
-            if (!showOdds || !match.odds || match.status === 'finished') return '';
-
-            const odds = match.odds;
+            if (!match.odds || match.status === 'finished') return '';
+            const o = match.odds;
             let html = '<div class="match-odds">';
 
-            // Moneyline
-            if (odds.moneyline && (odds.moneyline.home || odds.moneyline.away)) {
-                const homeML = odds.moneyline.home;
-                const awayML = odds.moneyline.away;
-                const homeClass = homeML && parseInt(homeML) < 0 ? 'favorite' : 'underdog';
-                const awayClass = awayML && parseInt(awayML) < 0 ? 'favorite' : 'underdog';
-                html += `
-                    <div class="odds-group">
-                        <span class="odds-label">ML</span>
-                        <div class="odds-pair">
-                            <div class="odds-cell ${homeClass}">${formatOddsVal(homeML)}</div>
-                            <div class="odds-cell ${awayClass}">${formatOddsVal(awayML)}</div>
-                        </div>
-                    </div>
-                `;
+            if (o.moneyline && (o.moneyline.home || o.moneyline.away)) {
+                const hc = o.moneyline.home && parseInt(o.moneyline.home) < 0 ? 'favorite' : 'underdog';
+                const ac = o.moneyline.away && parseInt(o.moneyline.away) < 0 ? 'favorite' : 'underdog';
+                html += `<div class="odds-group"><span class="odds-label">ML</span><div class="odds-pair"><div class="odds-cell ${hc}">${fmtOdds(o.moneyline.home)}</div><div class="odds-cell ${ac}">${fmtOdds(o.moneyline.away)}</div></div></div>`;
             }
 
-            // Spread
-            if (odds.pointSpread && odds.pointSpread.home) {
-                const homeLine = odds.pointSpread.home.line;
-                const awayLine = odds.pointSpread.away ? odds.pointSpread.away.line : (homeLine ? -homeLine : null);
-                html += `
-                    <div class="odds-group">
-                        <span class="odds-label">Spread</span>
-                        <div class="odds-pair">
-                            <div class="odds-cell"><span class="odds-point">${formatSpread(homeLine)}</span>${formatOddsVal(odds.pointSpread.home.odds)}</div>
-                            <div class="odds-cell"><span class="odds-point">${formatSpread(awayLine)}</span>${formatOddsVal(odds.pointSpread.away ? odds.pointSpread.away.odds : null)}</div>
-                        </div>
-                    </div>
-                `;
-            } else if (odds.spread) {
-                html += `
-                    <div class="odds-group">
-                        <span class="odds-label">Spread</span>
-                        <div class="odds-pair">
-                            <div class="odds-cell">${formatSpread(odds.spread)}</div>
-                            <div class="odds-cell">${formatSpread(-odds.spread)}</div>
-                        </div>
-                    </div>
-                `;
+            if (o.pointSpread?.home) {
+                html += `<div class="odds-group"><span class="odds-label">Spread</span><div class="odds-pair"><div class="odds-cell"><span class="odds-point">${fmtSpread(o.pointSpread.home.line)}</span>${fmtOdds(o.pointSpread.home.odds)}</div><div class="odds-cell"><span class="odds-point">${fmtSpread(o.pointSpread.away?.line)}</span>${fmtOdds(o.pointSpread.away?.odds)}</div></div></div>`;
+            } else if (o.spread) {
+                html += `<div class="odds-group"><span class="odds-label">Spread</span><div class="odds-pair"><div class="odds-cell">${fmtSpread(o.spread)}</div><div class="odds-cell">${fmtSpread(-o.spread)}</div></div></div>`;
             }
 
-            // Over/Under
-            if (odds.total && odds.total.over) {
-                html += `
-                    <div class="odds-group">
-                        <span class="odds-label">O/U ${odds.total.over.line || odds.overUnder}</span>
-                        <div class="odds-pair">
-                            <div class="odds-cell">O ${formatOddsVal(odds.total.over.odds)}</div>
-                            <div class="odds-cell">U ${formatOddsVal(odds.total.under ? odds.total.under.odds : null)}</div>
-                        </div>
-                    </div>
-                `;
-            } else if (odds.overUnder) {
-                html += `
-                    <div class="odds-group">
-                        <span class="odds-label">O/U</span>
-                        <div class="odds-pair">
-                            <div class="odds-cell">${odds.overUnder}</div>
-                        </div>
-                    </div>
-                `;
+            if (o.total?.over) {
+                html += `<div class="odds-group"><span class="odds-label">O/U ${o.total.over.line||o.overUnder||''}</span><div class="odds-pair"><div class="odds-cell">O${fmtOdds(o.total.over.odds)}</div><div class="odds-cell">U${fmtOdds(o.total.under?.odds)}</div></div></div>`;
+            } else if (o.overUnder) {
+                html += `<div class="odds-group"><span class="odds-label">O/U</span><div class="odds-pair"><div class="odds-cell">${o.overUnder}</div></div></div>`;
             }
 
-            html += `<div class="dk-badge">${odds.source}</div>`;
-            html += '</div>';
+            html += `<div class="dk-badge">${o.source}</div></div>`;
             return html;
         }
 
-        function formatOddsVal(val) {
-            if (val === null || val === undefined) return '-';
-            const num = parseInt(val);
-            if (isNaN(num)) return val;
-            return num > 0 ? `+${num}` : `${num}`;
+        function renderVoteBar(match) {
+            const voteKey = getMatchVoteKey(match);
+            const myVote = userVotes[voteKey] || '';
+
+            return `
+                <div class="vote-container" data-votekey="${voteKey}">
+                    <div class="vote-inner">
+                        <button class="vote-btn ${myVote==='home'?'voted':''}" onclick="event.stopPropagation();castVote('${match.id}','${match.sportKey}','home')" ${myVote?'disabled':''}>${match.home.split(' ').pop()}</button>
+                        <div class="vote-bar-wrap">
+                            <div class="vote-bar-home" style="width:50%">-</div>
+                            <div class="vote-bar-away" style="width:50%">-</div>
+                        </div>
+                        <button class="vote-btn ${myVote==='away'?'voted':''}" onclick="event.stopPropagation();castVote('${match.id}','${match.sportKey}','away')" ${myVote?'disabled':''}>${match.away.split(' ').pop()}</button>
+                        <span class="vote-count">loading...</span>
+                    </div>
+                </div>
+            `;
         }
 
-        function formatSpread(val) {
-            if (val === null || val === undefined) return '-';
-            const num = parseFloat(val);
-            if (isNaN(num)) return val;
-            return num > 0 ? `+${num}` : `${num}`;
+        function fmtOdds(v) {
+            if (v === null || v === undefined) return '';
+            const n = parseInt(v);
+            if (isNaN(n)) return v;
+            return n > 0 ? `+${n}` : `${n}`;
+        }
+
+        function fmtSpread(v) {
+            if (v === null || v === undefined) return '-';
+            const n = parseFloat(v);
+            if (isNaN(n)) return v;
+            return n > 0 ? `+${n}` : `${n}`;
         }
 
         function updateCounts() {
             let total = 0;
-            Object.keys(matchData).forEach(key => {
-                const count = matchData[key] ? matchData[key].matches.length : 0;
+            ALL_SPORTS.forEach(s => {
+                const count = matchData[s.key]?.matches?.length || 0;
                 total += count;
-                const el = document.getElementById(`count-${key}`);
-                if (el) el.textContent = count;
+                const el = document.getElementById(`count-${s.key}`);
+                if (el) el.textContent = count || '';
             });
-            document.getElementById("count-all").textContent = total;
+            document.getElementById('count-all').textContent = total;
         }
 
         function updateTime() {
-            const now = new Date();
-            document.getElementById("lastUpdated").textContent =
-                `Updated: ${now.toLocaleTimeString()}`;
+            document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
         }
 
-        // --- EVENT LISTENERS ---
-
-        document.querySelectorAll(".sport-tab").forEach(tab => {
-            tab.addEventListener("click", () => {
-                document.querySelectorAll(".sport-tab").forEach(t => t.classList.remove("active"));
-                tab.classList.add("active");
-                activeSport = tab.dataset.sport;
-                renderMatches();
-            });
-        });
-
-        document.querySelectorAll(".filter-btn").forEach(btn => {
-            btn.addEventListener("click", () => {
-                document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
-                btn.classList.add("active");
+        // ===== EVENT LISTENERS =====
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
                 activeFilter = btn.dataset.filter;
                 renderMatches();
             });
         });
 
-        // --- INIT & AUTO-REFRESH ---
-
+        // ===== INIT =====
+        renderSportTabs();
         fetchAllData();
         setInterval(fetchAllData, 30000);
     </script>
